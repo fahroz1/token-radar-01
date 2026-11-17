@@ -10,12 +10,19 @@
 // Implied value follows only from the snapshot's own figures, never from a list of names:
 //
 //   base       = tvl_usd x category_multiple          (the category family's FDV/TVL band)
-//   growth     = clamp(change_7d, -60, 120) per cent
+//   growth     = clamp(change_7d, -60, 60) per cent
 //   growthMult = 1 + (growth / 100) x GROWTH_WEIGHT
 //   maturity   = 0.55 + 0.45 x min(age_days, 730) / 730, then easing to 0.85 by 5 years
 //                (age_days unknown: 365)
 //   reach      = 1 + 0.03 x min(chains - 1, 3)         (how many chains the protocol runs on)
 //   implied    = max(1, round(base x growthMult x maturity x reach))
+//
+// The growth clamp is symmetric at plus or minus 60 per cent: a week's move beyond that is
+// treated as noise, not signal. The snapshot's own outliers prove it — the largest weekly move
+// is +4,448 per cent on a 45-day-old protocol, a listing spike, not a trend; under the old
+// +120 cap it still earned the maximum growth bonus, the same as a genuine +120 week. Only
+// six of the board's 198 rows sit above +60, so the bound is surgical: it tames the spikes
+// without touching the other 192 rows or the top of the board.
 //
 // The maturity curve rises while a protocol proves itself with no token, then eases: a protocol
 // that has run five years with no token is worth less per dollar of TVL than one that has run two,
@@ -62,7 +69,7 @@ export interface ModelConstants {
 export const MODEL: ModelConstants = {
   growth_weight: 0.6,
   growth_floor: -60,
-  growth_cap: 120,
+  growth_cap: 60,
   maturity_floor: 0.55,
   maturity_peak_days: 730,
   maturity_ease: 0.15,
@@ -73,7 +80,7 @@ export const MODEL: ModelConstants = {
 };
 
 /** The model's version label: the dashboard names it. */
-export const MODEL_VERSION = 'radar-2';
+export const MODEL_VERSION = 'radar-3';
 
 /** How many live-token protocols the Live token view carries, by market cap. */
 export const LIVE_ROWS = 24;
